@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% block title %}Пошук — MySocial{% endblock %}
+
+{% block body %}
+<div class="app-container">
+
+  <aside class="sidebar-left">
+    <div class="sidebar-logo">MySocial</div>
+    <a href="/" class="nav-item"><span class="nav-icon">🏠</span> Стрічка</a>
+    <a href="/search" class="nav-item active"><span class="nav-icon">🔍</span> Пошук</a>
+    <a href="/notifications" class="nav-item"><span class="nav-icon">🔔</span> Сповіщення<span class="nav-badge" data-notif>0</span></a>
+    <a href="/profile/{{ session.username }}" class="nav-item"><span class="nav-icon">👤</span> Профіль</a>
+    <button class="sidebar-post-btn" onclick="openModal('modal-post')">+ Створити пост</button>
+    <a href="/profile/{{ session.username }}" class="sidebar-user">
+      <div class="avatar avatar-sm" style="background:{{ session.get('accent','#6366f1') }}">{{ session.username[0].upper() }}</div>
+      <div class="sidebar-user-info"><div class="sidebar-username">{{ session.username }}</div></div>
+    </a>
+  </aside>
+
+  <main class="main-feed">
+
+    <div class="top-bar">
+      <div class="top-bar-logo">MySocial</div>
+    </div>
+
+    <div class="search-bar-wrap">
+      <form action="/search" method="GET">
+        <div class="search-bar">
+          <span class="search-bar-icon">🔍</span>
+          <input class="search-input" name="q" type="search"
+                 placeholder="Пошук людей..."
+                 value="{{ q or '' }}" autofocus>
+        </div>
+      </form>
+    </div>
+
+    {% if q and users %}
+      <div class="section-title">Результати для "{{ q }}"</div>
+      {% for user in users %}
+        <div class="search-user-card">
+          <a href="/profile/{{ user.username }}">
+            <div class="avatar avatar-md" style="background:{{ user.avatar_color }}">
+              {{ user.username[0].upper() }}
+            </div>
+          </a>
+          <div class="search-user-info">
+            <a href="/profile/{{ user.username }}" class="search-username">{{ user.username }}</a>
+            <div class="search-meta">{{ user.followers_count }} підписників</div>
+          </div>
+          <button class="suggest-follow-btn follow-btn-ajax {% if user.is_following %}following{% endif %}"
+                  data-user-id="{{ user.id }}"
+                  style="font-size:0.875rem;font-weight:700;color:var(--accent);">
+            {% if user.is_following %}Підписаний{% else %}Підписатись{% endif %}
+          </button>
+        </div>
+      {% endfor %}
+
+    {% elif q %}
+      <div class="empty-state">
+        <div class="empty-icon">🔍</div>
+        <div class="empty-text">Нічого не знайдено</div>
+        <div class="empty-sub">Спробуйте інший запит</div>
+      </div>
+
+    {% else %}
+      {% if trending %}
+        <div class="section-title">У тренді</div>
+        <div class="trending-grid">
+          {% for post in trending %}
+            <div class="trending-item">
+              <span>📝</span>
+              <div style="position:absolute;inset:0;background:rgba(0,0,0,0);transition:background 0.2s;display:flex;align-items:flex-end;padding:6px;">
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endif %}
+
+  </main>
+
+  <aside class="sidebar-right"></aside>
+</div>
+
+<nav class="bottom-nav">
+  <a href="/" class="bottom-nav-item"><span class="bnav-icon">🏠</span><span>Стрічка</span></a>
+  <a href="/search" class="bottom-nav-item active"><span class="bnav-icon">🔍</span><span>Пошук</span></a>
+  <div class="bottom-nav-post"><button class="bottom-nav-post-btn" onclick="openModal('modal-post')">＋</button></div>
+  <a href="/notifications" class="bottom-nav-item"><span class="bnav-icon">🔔</span><span>Сповіщення</span><span class="bnav-badge" data-notif></span></a>
+  <a href="/profile/{{ session.username }}" class="bottom-nav-item"><span class="bnav-icon">👤</span><span>Профіль</span></a>
+</nav>
+{% endblock %}

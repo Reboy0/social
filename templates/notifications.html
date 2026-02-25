@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% block title %}Сповіщення — MySocial{% endblock %}
+
+{% block body %}
+<div class="app-container">
+
+  <aside class="sidebar-left">
+    <div class="sidebar-logo">MySocial</div>
+    <a href="/" class="nav-item"><span class="nav-icon">🏠</span> Стрічка</a>
+    <a href="/search" class="nav-item"><span class="nav-icon">🔍</span> Пошук</a>
+    <a href="/notifications" class="nav-item active"><span class="nav-icon">🔔</span> Сповіщення</a>
+    <a href="/profile/{{ session.username }}" class="nav-item"><span class="nav-icon">👤</span> Профіль</a>
+    <button class="sidebar-post-btn" onclick="openModal('modal-post')">+ Створити пост</button>
+    <a href="/profile/{{ session.username }}" class="sidebar-user">
+      <div class="avatar avatar-sm" style="background:{{ session.get('accent','#6366f1') }}">{{ session.username[0].upper() }}</div>
+      <div class="sidebar-user-info"><div class="sidebar-username">{{ session.username }}</div></div>
+    </a>
+  </aside>
+
+  <main class="main-feed">
+
+    <div class="top-bar">
+      <a href="/" class="icon-btn">←</a>
+      <div style="font-weight:700;">Сповіщення</div>
+      <div style="width:36px;"></div>
+    </div>
+
+    <div class="page-header" style="display:none;">
+      <div class="page-header-title">Сповіщення</div>
+    </div>
+
+    {% if not notifications %}
+      <div class="empty-state">
+        <div class="empty-icon">🔔</div>
+        <div class="empty-text">Немає сповіщень</div>
+        <div class="empty-sub">Коли хтось підпишеться або лайкне — ви побачите тут</div>
+      </div>
+    {% endif %}
+
+    {% for notif in notifications %}
+      <div class="notif-item {% if not notif.is_read %}unread{% endif %}">
+        <a href="/profile/{{ notif.username }}">
+          <div class="avatar avatar-sm" style="background:{{ notif.avatar_color }}">
+            {{ notif.username[0].upper() }}
+          </div>
+        </a>
+        <div class="notif-text">
+          <a href="/profile/{{ notif.username }}" style="font-weight:700;">{{ notif.username }}</a>
+          {% if notif.type == 'like' %}
+            &nbsp;❤️ вподобав(-ла) ваш пост
+          {% elif notif.type == 'comment' %}
+            &nbsp;💬 прокоментував(-ла) ваш пост
+          {% elif notif.type == 'follow' %}
+            &nbsp;👤 підписався(-лась) на вас
+          {% endif %}
+          <div class="notif-time">{{ notif.created_at }}</div>
+        </div>
+      </div>
+    {% endfor %}
+
+  </main>
+
+  <aside class="sidebar-right"></aside>
+</div>
+
+<nav class="bottom-nav">
+  <a href="/" class="bottom-nav-item"><span class="bnav-icon">🏠</span><span>Стрічка</span></a>
+  <a href="/search" class="bottom-nav-item"><span class="bnav-icon">🔍</span><span>Пошук</span></a>
+  <div class="bottom-nav-post"><button class="bottom-nav-post-btn" onclick="openModal('modal-post')">＋</button></div>
+  <a href="/notifications" class="bottom-nav-item active"><span class="bnav-icon">🔔</span><span>Сповіщення</span></a>
+  <a href="/profile/{{ session.username }}" class="bottom-nav-item"><span class="bnav-icon">👤</span><span>Профіль</span></a>
+</nav>
+{% endblock %}

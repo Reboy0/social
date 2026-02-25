@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block title %}404 — MySocial{% endblock %}
+{% block body %}
+<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;">
+  <div class="empty-state">
+    <div style="font-size:4rem;font-weight:800;background:var(--accent-grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">404</div>
+    <div class="empty-text">Сторінку не знайдено</div>
+    <div class="empty-sub" style="margin-bottom:20px;">Можливо, її було видалено або ви ввели неправильний URL</div>
+    <a href="/" style="background:var(--accent-grad);color:white;padding:10px 24px;border-radius:50px;font-weight:700;text-decoration:none;">← На головну</a>
+  </div>
+</div>
+<nav class="bottom-nav">
+  <a href="/" class="bottom-nav-item active"><span class="bnav-icon">🏠</span><span>Стрічка</span></a>
+  <a href="/search" class="bottom-nav-item"><span class="bnav-icon">🔍</span><span>Пошук</span></a>
+  <div class="bottom-nav-post"><button class="bottom-nav-post-btn" onclick="openModal('modal-post')">＋</button></div>
+  <a href="/notifications" class="bottom-nav-item"><span class="bnav-icon">🔔</span><span>Сповіщення</span></a>
+  <a href="/profile/{{ session.get('username','') }}" class="bottom-nav-item"><span class="bnav-icon">👤</span><span>Профіль</span></a>
+</nav>
+{% endblock %}

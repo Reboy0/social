@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+{% block title %}@{{ user.username }} — MySocial{% endblock %}
+
+{% block body %}
+<div class="app-container">
+
+  <aside class="sidebar-left">
+    <div class="sidebar-logo">MySocial</div>
+    <a href="/" class="nav-item"><span class="nav-icon">🏠</span> Стрічка</a>
+    <a href="/search" class="nav-item"><span class="nav-icon">🔍</span> Пошук</a>
+    <a href="/notifications" class="nav-item"><span class="nav-icon">🔔</span> Сповіщення<span class="nav-badge" data-notif>0</span></a>
+    <a href="/profile/{{ session.username }}" class="nav-item active"><span class="nav-icon">👤</span> Профіль</a>
+    <button class="sidebar-post-btn" onclick="openModal('modal-post')">+ Створити пост</button>
+    <a href="/profile/{{ session.username }}" class="sidebar-user">
+      <div class="avatar avatar-sm" style="background:{{ session.get('accent','#6366f1') }}">{{ session.username[0].upper() }}</div>
+      <div class="sidebar-user-info">
+        <div class="sidebar-username">{{ session.username }}</div>
+      </div>
+    </a>
+  </aside>
+
+  <main class="main-feed">
+
+    <div class="top-bar">
+      <a href="/" class="icon-btn">←</a>
+      <div style="font-weight:700;">@{{ user.username }}</div>
+      <div style="width:36px;"></div>
+    </div>
+
+    <div class="profile-header">
+      <div class="profile-top">
+        <div class="avatar avatar-xl" style="background:{{ user.avatar_color }}">
+          {{ user.username[0].upper() }}
+        </div>
+        <div class="profile-stats">
+          <div class="profile-stat">
+            <div class="profile-stat-value">{{ posts|length }}</div>
+            <div class="profile-stat-label">Постів</div>
+          </div>
+          <div class="profile-stat">
+            <div class="profile-stat-value">{{ followers_count }}</div>
+            <div class="profile-stat-label">Читачів</div>
+          </div>
+          <div class="profile-stat">
+            <div class="profile-stat-value">{{ following_count }}</div>
+            <div class="profile-stat-label">Читає</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="profile-bio-section">
+        <div class="profile-fullname">{{ user.username }}</div>
+        {% if user.bio %}
+          <div class="profile-bio">{{ user.bio }}</div>
+        {% endif %}
+      </div>
+
+      {% if session.user_id == user.id %}
+        <a href="/profile/{{ user.username }}/edit" class="btn-edit">Редагувати профіль</a>
+      {% else %}
+        <form action="/follow/{{ user.id }}" method="POST">
+          <button type="submit" class="btn-follow follow-btn-ajax {% if is_following %}following{% endif %}"
+                  data-user-id="{{ user.id }}">
+            {% if is_following %}Підписаний{% else %}Підписатись{% endif %}
+          </button>
+        </form>
+      {% endif %}
+    </div>
+
+    <div class="divider"></div>
+
+    {% if not posts %}
+      <div class="empty-state">
+        <div class="empty-icon">📝</div>
+        <div class="empty-text">Немає постів</div>
+        <div class="empty-sub">Поки тут нічого немає</div>
+      </div>
+    {% else %}
+      <div class="profile-grid">
+        {% for post in posts %}
+          <div class="profile-grid-item">
+            <span style="font-size:1.5rem;">📝</span>
+            <div class="profile-grid-text">{{ post.content[:60] }}{% if post.content|length > 60 %}...{% endif %}</div>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+  </main>
+
+  <aside class="sidebar-right"></aside>
+</div>
+
+<nav class="bottom-nav">
+  <a href="/" class="bottom-nav-item"><span class="bnav-icon">🏠</span><span>Стрічка</span></a>
+  <a href="/search" class="bottom-nav-item"><span class="bnav-icon">🔍</span><span>Пошук</span></a>
+  <div class="bottom-nav-post"><button class="bottom-nav-post-btn" onclick="openModal('modal-post')">＋</button></div>
+  <a href="/notifications" class="bottom-nav-item"><span class="bnav-icon">🔔</span><span>Сповіщення</span><span class="bnav-badge" data-notif></span></a>
+  <a href="/profile/{{ session.username }}" class="bottom-nav-item active"><span class="bnav-icon">👤</span><span>Профіль</span></a>
+</nav>
+{% endblock %}

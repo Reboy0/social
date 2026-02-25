@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="uk" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Сторіс — MySocial</title>
+  <link rel="stylesheet" href="/static/css/main.css">
+</head>
+<body data-init-theme="dark" data-init-accent="#6366f1" style="background:#000;overflow:hidden;">
+
+<div class="story-viewer">
+  <div class="story-viewer-bg" onclick="window.location.href='/'"></div>
+  <div class="story-card" style="background:{{ story.bg_color }};">
+
+    <div class="story-progress">
+      <div class="story-progress-bar" data-next-id="{{ next_id or '' }}"></div>
+    </div>
+
+    <div class="story-header">
+      <div class="avatar avatar-sm" style="background:rgba(255,255,255,0.3);">
+        {{ story.username[0].upper() }}
+      </div>
+      <span style="color:white;font-weight:600;font-size:0.875rem;">{{ story.username }}</span>
+      <span style="color:rgba(255,255,255,0.6);font-size:0.75rem;margin-left:4px;">{{ story.created_at }}</span>
+      <a href="/" class="story-close">✕</a>
+    </div>
+
+    <div class="story-body">
+      <div class="story-text">{{ story.content }}</div>
+    </div>
+
+  </div>
+</div>
+
+<script src="/static/js/main.js"></script>
+</body>
+</html>

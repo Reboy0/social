@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+{% block title %}Налаштування — MySocial{% endblock %}
+
+{% block body %}
+<div class="app-container">
+
+  <aside class="sidebar-left">
+    <div class="sidebar-logo">MySocial</div>
+    <a href="/" class="nav-item"><span class="nav-icon">🏠</span> Стрічка</a>
+    <a href="/search" class="nav-item"><span class="nav-icon">🔍</span> Пошук</a>
+    <a href="/notifications" class="nav-item"><span class="nav-icon">🔔</span> Сповіщення</a>
+    <a href="/profile/{{ session.username }}" class="nav-item active"><span class="nav-icon">👤</span> Профіль</a>
+    <button class="sidebar-post-btn" onclick="openModal('modal-post')">+ Створити пост</button>
+    <a href="/profile/{{ session.username }}" class="sidebar-user">
+      <div class="avatar avatar-sm" style="background:{{ session.get('accent','#6366f1') }}">{{ session.username[0].upper() }}</div>
+      <div class="sidebar-user-info"><div class="sidebar-username">{{ session.username }}</div></div>
+    </a>
+  </aside>
+
+  <main class="main-feed">
+
+    <div class="top-bar">
+      <a href="/profile/{{ user.username }}" class="icon-btn">←</a>
+      <div style="font-weight:700;">Редагувати профіль</div>
+      <div style="width:36px;"></div>
+    </div>
+
+    <form action="/profile/{{ user.username }}/edit" method="POST">
+
+      {# Bio #}
+      <div class="settings-section">
+        <div class="settings-label">Про себе</div>
+        <textarea class="textarea-input" name="bio" placeholder="Розкажіть про себе..." maxlength="200">{{ user.bio or '' }}</textarea>
+      </div>
+
+      {# Avatar color #}
+      <div class="settings-section">
+        <div class="settings-label">Колір аватара</div>
+        <div class="color-grid">
+          {% set avatar_colors = ['#6366f1','#a855f7','#ec4899','#f43f5e','#f97316','#eab308','#10b981','#06b6d4','#3b82f6','#0f172a','#78716c','#64748b'] %}
+          {% for color in avatar_colors %}
+            <div class="color-swatch {% if user.avatar_color == color %}selected{% endif %}"
+                 style="background:{{ color }}"
+                 data-color="{{ color }}"
+                 data-target="avatar_color"
+                 onclick="this.closest('.color-grid').querySelectorAll('.color-swatch').forEach(s=>s.classList.remove('selected'));this.classList.add('selected');document.querySelector('[name=avatar_color]').value='{{ color }}'">
+            </div>
+          {% endfor %}
+        </div>
+        <input type="hidden" name="avatar_color" value="{{ user.avatar_color }}">
+      </div>
+
+      {# Accent color #}
+      <div class="settings-section">
+        <div class="settings-label">Акцентний колір інтерфейсу</div>
+        <div class="color-grid" id="accent-grid">
+          {% set accent_colors = [
+            ('#6366f1','Індиго'), ('#a855f7','Фіолет'), ('#ec4899','Рожевий'),
+            ('#f43f5e','Червоний'), ('#f97316','Помаранч'), ('#eab308','Жовтий'),
+            ('#10b981','Зелений'), ('#06b6d4','Блакитний'), ('#3b82f6','Синій')
+          ] %}
+          {% for color, label in accent_colors %}
+            <div class="color-swatch {% if user.accent_color == color %}selected{% endif %}"
+                 style="background:{{ color }}"
+                 data-color="{{ color }}"
+                 data-target="accent_color"
+                 data-type="accent"
+                 title="{{ label }}"
+                 onclick="document.getElementById('accent-grid').querySelectorAll('.color-swatch').forEach(s=>s.classList.remove('selected'));this.classList.add('selected');document.querySelector('[name=accent_color]').value='{{ color }}';setAccentColor('{{ color }}')">
+            </div>
+          {% endfor %}
+        </div>
+        <input type="hidden" name="accent_color" value="{{ user.accent_color }}">
+      </div>
+
+      {# Theme #}
+      <div class="settings-section">
+        <div class="settings-label">Тема</div>
+        <div class="theme-toggle-row">
+          <div class="theme-label">Темна тема</div>
+          <button type="button" class="toggle-switch {% if user.theme == 'dark' %}on{% endif %}"
+                  id="theme-toggle"
+                  onclick="const next=toggleTheme();document.querySelector('[name=theme]').value=next;"></button>
+        </div>
+        <input type="hidden" name="theme" value="{{ user.theme or 'light' }}">
+      </div>
+
+      <div class="settings-section">
+        <button type="submit" style="
+          width:100%; padding:12px;
+          background:var(--accent-grad); border:none; border-radius:10px;
+          color:white; font-weight:700; font-size:0.95rem; cursor:pointer;
+          box-shadow:0 4px 12px rgba(99,102,241,0.3);
+        ">Зберегти зміни</button>
+        <a href="/profile/{{ user.username }}" style="
+          display:block; text-align:center; margin-top:10px;
+          color:var(--text-2); font-size:0.875rem;">Скасувати</a>
+      </div>
+
+      <div class="settings-section" style="border:none;">
+        <a href="/logout" style="color:#ef4444;font-size:0.875rem;font-weight:600;">Вийти з акаунту</a>
+      </div>
+
+    </form>
+
+  </main>
+
+  <aside class="sidebar-right"></aside>
+</div>
+
+<nav class="bottom-nav">
+  <a href="/" class="bottom-nav-item"><span class="bnav-icon">🏠</span><span>Стрічка</span></a>
+  <a href="/search" class="bottom-nav-item"><span class="bnav-icon">🔍</span><span>Пошук</span></a>
+  <div class="bottom-nav-post"><button class="bottom-nav-post-btn" onclick="openModal('modal-post')">＋</button></div>
+  <a href="/notifications" class="bottom-nav-item"><span class="bnav-icon">🔔</span><span>Сповіщення</span></a>
+  <a href="/profile/{{ session.username }}" class="bottom-nav-item active"><span class="bnav-icon">👤</span><span>Профіль</span></a>
+</nav>
+{% endblock %}

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="uk" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>{% block title %}MySocial{% endblock %}</title>
+  <link rel="stylesheet" href="/static/css/main.css">
+  {% block head %}{% endblock %}
+</head>
+<body
+  data-init-theme="{{ session.get('theme', 'light') }}"
+  data-init-accent="{{ session.get('accent', '#6366f1') }}">
+
+{% with messages = get_flashed_messages(with_categories=True) %}
+  {% if messages %}
+    <div class="flash-container">
+      {% for category, message in messages %}
+        <div class="flash-item {{ category }}">{{ message }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+{% block body %}{% endblock %}
+
+<!-- Create Post Modal -->
+<div class="modal-overlay" id="modal-post" onclick="if(event.target===this)closeModal('modal-post')">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Новий пост</div>
+    <form action="/post" method="POST">
+      <div style="display:flex;gap:12px;align-items:flex-start;">
+        <div class="avatar avatar-sm" style="background:{{ session.get('accent','#6366f1') }};flex-shrink:0;margin-top:4px;">
+          {{ session.get('username','?')[0].upper() }}
+        </div>
+        <textarea
+          class="compose-textarea"
+          name="content"
+          placeholder="Що у вас на думці?"
+          data-limit="500"
+          maxlength="500"
+          required
+        ></textarea>
+      </div>
+      <div class="compose-footer">
+        <span class="compose-char" style="color:var(--text-3);">500</span>
+        <button type="submit" class="compose-submit">Опублікувати</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Create Story Modal -->
+<div class="modal-overlay" id="modal-story" onclick="if(event.target===this)closeModal('modal-story')">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Нова сторіс</div>
+    <form action="/story/create" method="POST">
+      <textarea
+        class="compose-textarea"
+        name="content"
+        placeholder="Напишіть щось для сторіс..."
+        data-limit="200"
+        maxlength="200"
+        style="min-height:70px;"
+        required
+      ></textarea>
+      <input type="hidden" name="bg_color" value="#6366f1">
+      <div class="story-bg-picker">
+        {% for color in ['#6366f1','#a855f7','#ec4899','#f43f5e','#f97316','#10b981','#06b6d4','#1d4ed8','#0f172a','#78716c'] %}
+          <div class="story-bg-swatch {% if loop.first %}selected{% endif %}"
+               style="background:{{ color }}"
+               data-color="{{ color }}"
+               data-target="bg_color"
+               onclick="this.closest('form').querySelector('[name=bg_color]').value='{{ color }}';
+                        this.closest('.story-bg-picker').querySelectorAll('.story-bg-swatch').forEach(s=>s.classList.remove('selected'));
+                        this.classList.add('selected')">
+          </div>
+        {% endfor %}
+      </div>
+      <div class="compose-footer" style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);">
+        <span></span>
+        <button type="submit" class="compose-submit">Опублікувати сторіс</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="/static/js/main.js"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>
