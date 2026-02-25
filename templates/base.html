@@ -23,12 +23,13 @@
 
 {% block body %}{% endblock %}
 
-<!-- Create Post Modal -->
+<!-- ═══ CREATE POST MODAL ═══ -->
 <div class="modal-overlay" id="modal-post" onclick="if(event.target===this)closeModal('modal-post')">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
     <div class="modal-title">Новий пост</div>
-    <form action="/post" method="POST">
+
+    <form action="/post" method="POST" enctype="multipart/form-data" id="post-form">
       <div style="display:flex;gap:12px;align-items:flex-start;">
         <div class="avatar avatar-sm" style="background:{{ session.get('accent','#6366f1') }};flex-shrink:0;margin-top:4px;">
           {{ session.get('username','?')[0].upper() }}
@@ -39,39 +40,61 @@
           placeholder="Що у вас на думці?"
           data-limit="500"
           maxlength="500"
-          required
         ></textarea>
       </div>
+
+      <!-- Media preview -->
+      <div id="media-preview" class="media-preview-grid" style="display:none;"></div>
+
+      <!-- Hidden file input -->
+      <input type="file" name="media" id="media-input"
+             accept="image/*,video/mp4,video/mov,video/webm,audio/mp3,audio/mpeg,audio/wav,audio/ogg,audio/m4a"
+             multiple style="display:none;"
+             onchange="handleMediaSelect(this)">
+
       <div class="compose-footer">
-        <span class="compose-char" style="color:var(--text-3);">500</span>
-        <button type="submit" class="compose-submit">Опублікувати</button>
+        <div style="display:flex;gap:4px;align-items:center;">
+          <button type="button" class="compose-media-btn" title="Фото / Відео"
+                  onclick="triggerMedia('image/*,video/mp4,video/webm,video/mov')">🖼️</button>
+          <button type="button" class="compose-media-btn" title="Аудіо / Музика"
+                  onclick="triggerMedia('audio/*')">🎵</button>
+          <button type="button" class="compose-media-btn" title="Голосове"
+                  id="voice-btn" onclick="toggleVoiceRecord()">🎤</button>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <span class="compose-char">500</span>
+          <button type="submit" class="compose-submit">Опублікувати</button>
+        </div>
       </div>
+
+      <!-- Voice recording UI -->
+      <div id="voice-ui" style="display:none;padding-top:12px;border-top:1px solid var(--border);margin-top:12px;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div id="voice-indicator" style="width:10px;height:10px;background:#ef4444;border-radius:50%;"></div>
+          <span id="voice-timer" style="font-size:0.875rem;color:var(--text-2);">0:00</span>
+          <button type="button" onclick="stopVoiceRecord()" class="compose-submit" style="padding:6px 14px;font-size:0.8rem;">⏹ Зупинити</button>
+          <button type="button" onclick="cancelVoiceRecord()" style="background:none;border:none;color:var(--text-2);cursor:pointer;font-size:0.8rem;">Скасувати</button>
+        </div>
+        <audio id="voice-playback" controls style="width:100%;margin-top:10px;display:none;"></audio>
+      </div>
+
     </form>
   </div>
 </div>
 
-<!-- Create Story Modal -->
+<!-- ═══ STORY MODAL ═══ -->
 <div class="modal-overlay" id="modal-story" onclick="if(event.target===this)closeModal('modal-story')">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
     <div class="modal-title">Нова сторіс</div>
     <form action="/story/create" method="POST">
-      <textarea
-        class="compose-textarea"
-        name="content"
-        placeholder="Напишіть щось для сторіс..."
-        data-limit="200"
-        maxlength="200"
-        style="min-height:70px;"
-        required
-      ></textarea>
+      <textarea class="compose-textarea" name="content" placeholder="Напишіть щось для сторіс..."
+                data-limit="200" maxlength="200" style="min-height:70px;" required></textarea>
       <input type="hidden" name="bg_color" value="#6366f1">
       <div class="story-bg-picker">
         {% for color in ['#6366f1','#a855f7','#ec4899','#f43f5e','#f97316','#10b981','#06b6d4','#1d4ed8','#0f172a','#78716c'] %}
           <div class="story-bg-swatch {% if loop.first %}selected{% endif %}"
                style="background:{{ color }}"
-               data-color="{{ color }}"
-               data-target="bg_color"
                onclick="this.closest('form').querySelector('[name=bg_color]').value='{{ color }}';
                         this.closest('.story-bg-picker').querySelectorAll('.story-bg-swatch').forEach(s=>s.classList.remove('selected'));
                         this.classList.add('selected')">

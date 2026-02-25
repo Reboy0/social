@@ -4,30 +4,16 @@
 {% block body %}
 <div class="app-container">
 
-  {# ═══ LEFT SIDEBAR (desktop) ═══ #}
+  {# ═══ LEFT SIDEBAR ═══ #}
   <aside class="sidebar-left">
     <div class="sidebar-logo">MySocial</div>
-
-    <a href="/" class="nav-item active">
-      <span class="nav-icon">🏠</span> Стрічка
-    </a>
-    <a href="/search" class="nav-item">
-      <span class="nav-icon">🔍</span> Пошук
-    </a>
-    <a href="/notifications" class="nav-item">
-      <span class="nav-icon">🔔</span> Сповіщення
-      <span class="nav-badge" data-notif>0</span>
-    </a>
-    <a href="/profile/{{ session.username }}" class="nav-item">
-      <span class="nav-icon">👤</span> Профіль
-    </a>
-
+    <a href="/" class="nav-item active"><span class="nav-icon">🏠</span> Стрічка</a>
+    <a href="/search" class="nav-item"><span class="nav-icon">🔍</span> Пошук</a>
+    <a href="/notifications" class="nav-item"><span class="nav-icon">🔔</span> Сповіщення<span class="nav-badge" data-notif>0</span></a>
+    <a href="/profile/{{ session.username }}" class="nav-item"><span class="nav-icon">👤</span> Профіль</a>
     <button class="sidebar-post-btn" onclick="openModal('modal-post')">+ Створити пост</button>
-
     <a href="/profile/{{ session.username }}" class="sidebar-user">
-      <div class="avatar avatar-sm" style="background:{{ session.get('accent','#6366f1') }}">
-        {{ session.username[0].upper() }}
-      </div>
+      <div class="avatar avatar-sm" style="background:{{ session.get('accent','#6366f1') }}">{{ session.username[0].upper() }}</div>
       <div class="sidebar-user-info">
         <div class="sidebar-username">{{ session.username }}</div>
         <div class="sidebar-handle">@{{ session.username }}</div>
@@ -38,14 +24,10 @@
   {# ═══ MAIN FEED ═══ #}
   <main class="main-feed">
 
-    {# Top bar (mobile) #}
     <div class="top-bar">
       <div class="top-bar-logo">MySocial</div>
       <div class="top-bar-actions">
-        <a href="/notifications" class="icon-btn">
-          🔔
-          <span class="notif-dot" data-notif></span>
-        </a>
+        <a href="/notifications" class="icon-btn">🔔<span class="notif-dot" data-notif></span></a>
         <button class="icon-btn" onclick="openModal('modal-post')">➕</button>
       </div>
     </div>
@@ -53,19 +35,15 @@
     {# Stories #}
     <div class="stories-bar">
       <div class="stories-inner">
-        {# Add story button #}
         <div class="story-item" onclick="openModal('modal-story')">
           <button class="story-add-btn">＋</button>
           <span class="story-username">Ваша сторіс</span>
         </div>
-
         {% for story in stories %}
           <a href="/story/{{ story.id }}" class="story-item" style="text-decoration:none;">
             <div class="story-avatar-wrap">
               <div class="avatar-story-ring {% if story.viewed %}viewed{% endif %}">
-                <div class="avatar avatar-md" style="background:{{ story.avatar_color }}">
-                  {{ story.username[0].upper() }}
-                </div>
+                <div class="avatar avatar-md" style="background:{{ story.avatar_color }}">{{ story.username[0].upper() }}</div>
               </div>
             </div>
             <span class="story-username">{{ story.username }}</span>
@@ -75,7 +53,7 @@
     </div>
 
     {# Posts #}
-    {% if not posts %}
+    {% if not post_rows %}
       <div class="empty-state">
         <div class="empty-icon">📱</div>
         <div class="empty-text">Стрічка порожня</div>
@@ -83,13 +61,13 @@
       </div>
     {% endif %}
 
-    {% for post in posts %}
+    {% for row in post_rows %}
+    {% set post = row.post %}
+    {% set media = row.media %}
     <article class="post-card">
       <div class="post-header">
         <a href="/profile/{{ post.username }}">
-          <div class="avatar avatar-sm" style="background:{{ post.avatar_color }}">
-            {{ post.username[0].upper() }}
-          </div>
+          <div class="avatar avatar-sm" style="background:{{ post.avatar_color }}">{{ post.username[0].upper() }}</div>
         </a>
         <div class="post-author-info">
           <a href="/profile/{{ post.username }}" class="post-author-name">{{ post.username }}</a>
@@ -98,46 +76,62 @@
         <button class="post-menu-btn">···</button>
       </div>
 
-      {# Double-tap area #}
+      {# Media display #}
+      {% if media %}
+        <div class="post-media-grid post-media-{{ media|length }}">
+          {% for m in media %}
+            {% if m.media_type == 'image' %}
+              <div class="post-media-item">
+                <img src="/static/uploads/{{ m.filename }}" alt="фото" loading="lazy">
+              </div>
+            {% elif m.media_type == 'video' %}
+              <div class="post-media-item post-media-video">
+                <video src="/static/uploads/{{ m.filename }}" controls preload="metadata"></video>
+              </div>
+            {% elif m.media_type == 'audio' %}
+              <div class="post-audio-wrap">
+                <div class="post-audio-icon">🎵</div>
+                <div class="post-audio-info">
+                  <div class="post-audio-label">Аудіо</div>
+                  <audio src="/static/uploads/{{ m.filename }}" controls></audio>
+                </div>
+              </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      {# Text content (double-tap zone) #}
       <div class="post-tappable" data-post-id="{{ post.id }}" style="position:relative;">
-        <div class="post-text-content">{{ post.content }}</div>
+        {% if post.content %}
+          <div class="post-text-content">{{ post.content }}</div>
+        {% endif %}
         <span class="double-tap-heart">❤️</span>
       </div>
 
       <div class="post-actions">
-        <button class="post-action-btn like-btn-ajax {% if post.user_liked %}liked{% endif %}"
-                data-post-id="{{ post.id }}">
+        <button class="post-action-btn like-btn-ajax {% if post.user_liked %}liked{% endif %}" data-post-id="{{ post.id }}">
           <span class="heart-icon">{% if post.user_liked %}❤️{% else %}🤍{% endif %}</span>
         </button>
-        <button class="post-action-btn view-comments-btn" data-post-id="{{ post.id }}"
-                style="font-size:1.1rem;">💬</button>
+        <button class="post-action-btn view-comments-btn" data-post-id="{{ post.id }}" style="font-size:1.1rem;">💬</button>
         <button class="post-action-btn" style="font-size:1.1rem;">📤</button>
         <button class="post-action-btn post-save-btn" style="font-size:1.1rem;">🔖</button>
       </div>
 
       {% if post.like_count > 0 %}
-        <div class="post-likes">
-          {{ post.like_count }} {% if post.like_count == 1 %}вподобання{% else %}вподобань{% endif %}
-        </div>
+        <div class="post-likes">{{ post.like_count }} {% if post.like_count == 1 %}вподобання{% else %}вподобань{% endif %}</div>
       {% endif %}
 
       {% if post.comment_count > 0 %}
-        <button class="view-comments-btn" data-post-id="{{ post.id }}">
-          Переглянути всі коментарі ({{ post.comment_count }})
-        </button>
+        <button class="view-comments-btn" data-post-id="{{ post.id }}">Переглянути всі коментарі ({{ post.comment_count }})</button>
       {% else %}
-        <button class="view-comments-btn" data-post-id="{{ post.id }}" style="color:var(--text-3);">
-          Додати коментар
-        </button>
+        <button class="view-comments-btn" data-post-id="{{ post.id }}" style="color:var(--text-3);">Додати коментар</button>
       {% endif %}
 
-      {# Comments section #}
       <div class="comments-section" id="comments-{{ post.id }}">
         <div class="comments-list"></div>
         <div class="comment-input-row" data-post-id="{{ post.id }}">
-          <div class="avatar avatar-xs" style="background:{{ session.get('accent','#6366f1') }}">
-            {{ session.username[0].upper() }}
-          </div>
+          <div class="avatar avatar-xs" style="background:{{ session.get('accent','#6366f1') }}">{{ session.username[0].upper() }}</div>
           <input class="comment-input" type="text" placeholder="Додати коментар...">
           <button class="comment-post-btn">Опублікувати</button>
         </div>
@@ -147,34 +141,25 @@
 
   </main>
 
-  {# ═══ RIGHT SIDEBAR (desktop) ═══ #}
+  {# ═══ RIGHT SIDEBAR ═══ #}
   <aside class="sidebar-right">
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
-      <div class="avatar avatar-md" style="background:{{ session.get('accent','#6366f1') }}">
-        {{ session.username[0].upper() }}
-      </div>
+      <div class="avatar avatar-md" style="background:{{ session.get('accent','#6366f1') }}">{{ session.username[0].upper() }}</div>
       <div>
         <div style="font-weight:700;font-size:0.9rem;">{{ session.username }}</div>
         <a href="/profile/{{ session.username }}" style="color:var(--text-2);font-size:0.8rem;">Перейти до профілю</a>
       </div>
     </div>
-
     {% if recommended %}
       <div class="sidebar-right-title">Рекомендовані</div>
       {% for user in recommended %}
         <div class="suggest-item">
-          <a href="/profile/{{ user.username }}">
-            <div class="avatar avatar-sm" style="background:{{ user.avatar_color }}">
-              {{ user.username[0].upper() }}
-            </div>
-          </a>
+          <a href="/profile/{{ user.username }}"><div class="avatar avatar-sm" style="background:{{ user.avatar_color }}">{{ user.username[0].upper() }}</div></a>
           <div class="suggest-info">
             <a href="/profile/{{ user.username }}" class="suggest-name">{{ user.username }}</a>
             <div class="suggest-sub">{{ user.followers_count }} підписників</div>
           </div>
-          <button class="suggest-follow-btn follow-btn-ajax" data-user-id="{{ user.id }}">
-            Підписатись
-          </button>
+          <button class="suggest-follow-btn follow-btn-ajax" data-user-id="{{ user.id }}">Підписатись</button>
         </div>
       {% endfor %}
     {% endif %}
@@ -182,28 +167,12 @@
 
 </div>
 
-{# ═══ BOTTOM NAV (mobile) ═══ #}
+{# ═══ BOTTOM NAV ═══ #}
 <nav class="bottom-nav">
-  <a href="/" class="bottom-nav-item active">
-    <span class="bnav-icon">🏠</span>
-    <span>Стрічка</span>
-  </a>
-  <a href="/search" class="bottom-nav-item">
-    <span class="bnav-icon">🔍</span>
-    <span>Пошук</span>
-  </a>
-  <div class="bottom-nav-post">
-    <button class="bottom-nav-post-btn" onclick="openModal('modal-post')">＋</button>
-  </div>
-  <a href="/notifications" class="bottom-nav-item" style="position:relative;">
-    <span class="bnav-icon">🔔</span>
-    <span>Сповіщення</span>
-    <span class="bnav-badge" data-notif></span>
-  </a>
-  <a href="/profile/{{ session.username }}" class="bottom-nav-item">
-    <span class="bnav-icon">👤</span>
-    <span>Профіль</span>
-  </a>
+  <a href="/" class="bottom-nav-item active"><span class="bnav-icon">🏠</span><span>Стрічка</span></a>
+  <a href="/search" class="bottom-nav-item"><span class="bnav-icon">🔍</span><span>Пошук</span></a>
+  <div class="bottom-nav-post"><button class="bottom-nav-post-btn" onclick="openModal('modal-post')">＋</button></div>
+  <a href="/notifications" class="bottom-nav-item"><span class="bnav-icon">🔔</span><span>Сповіщення</span><span class="bnav-badge" data-notif></span></a>
+  <a href="/profile/{{ session.username }}" class="bottom-nav-item"><span class="bnav-icon">👤</span><span>Профіль</span></a>
 </nav>
-
 {% endblock %}

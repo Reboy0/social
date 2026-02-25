@@ -343,3 +343,182 @@ function timeAgo(dateStr) {
   if (hrs < 24) return `${hrs} год`;
   return `${Math.floor(hrs/24)} дн`;
 }
+
+// ═══════════════════════════════════════
+// MEDIA UPLOAD & PREVIEW
+// ═══════════════════════════════════════
+let selectedFiles = [];
+
+function triggerMedia(accept) {
+  const input = document.getElementById('media-input');
+  if (!input) return;
+  input.accept = accept;
+  input.click();
+}
+
+function handleMediaSelect(input) {
+  const newFiles = Array.from(input.files);
+  const remaining = 4 - selectedFiles.length;
+  if (remaining <= 0) {
+    alert('Максимум 4 файли в одному пості');
+    input.value = '';
+    return;
+  }
+  const toAdd = newFiles.slice(0, remaining);
+  selectedFiles.push(...toAdd);
+  renderMediaPreview();
+  input.value = '';
+}
+
+function renderMediaPreview() {
+  const container = document.getElementById('media-preview');
+  if (!container) return;
+
+  if (selectedFiles.length === 0) {
+    container.style.display = 'none';
+    container.innerHTML = '';
+    syncFilesToForm();
+    return;
+  }
+
+  container.style.display = 'flex';
+  container.innerHTML = selectedFiles.map((file, i) => {
+    const isImage = file.type.startsWith('image/');
+    const isVideo = file.type.startsWith('video/');
+    const isAudio = file.type.startsWith('audio/');
+    const icon = isAudio ? '🎵' : isVideo ? '🎬' : '🖼️';
+
+    return `
+      <div class="media-preview-item" data-index="${i}">
+        ${isImage
+          ? `<img src="${URL.createObjectURL(file)}" alt="">`
+          : isVideo
+            ? `<video src="${URL.createObjectURL(file)}"></video>`
+            : `<div class="preview-type-icon">${icon}</div>`
+        }
+        <button type="button" class="media-preview-remove" onclick="removeMedia(${i})">✕</button>
+      </div>
+    `;
+  }).join('');
+
+  syncFilesToForm();
+}
+
+function removeMedia(index) {
+  URL.revokeObjectURL(document.querySelector(`[data-index="${index}"] img, [data-index="${index}"] video`)?.src);
+  selectedFiles.splice(index, 1);
+  renderMediaPreview();
+}
+
+function syncFilesToForm() {
+  // Replace file input files with selectedFiles using DataTransfer
+  const input = document.getElementById('media-input');
+  if (!input) return;
+  try {
+    const dt = new DataTransfer();
+    selectedFiles.forEach(f => dt.items.add(f));
+    input.files = dt.files;
+    // Make sure form includes it
+    input.style.display = 'none';
+    const form = document.getElementById('post-form');
+    if (form && !form.contains(input)) form.appendChild(input);
+  } catch(e) {}
+}
+
+// Reset media on modal close
+document.addEventListener('click', e => {
+  if (e.target.id === 'modal-post' || e.target.closest('[onclick*="closeModal(\'modal-post\'"]')) {
+    selectedFiles = [];
+    renderMediaPreview();
+  }
+});
+
+// ═══════════════════════════════════════
+// VOICE RECORDING
+// ═══════════════════════════════════════
+let mediaRecorder = null;
+let recordedChunks = [];
+let voiceTimerInterval = null;
+let voiceSeconds = 0;
+let voiceBlob = null;
+
+function toggleVoiceRecord() {
+  if (mediaRecorder && mediaRecorder.state === 'recording') {
+    stopVoiceRecord();
+  } else {
+    startVoiceRecord();
+  }
+}
+
+async function startVoiceRecord() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    recordedChunks = [];
+    voiceSeconds = 0;
+
+    const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/ogg';
+    mediaRecorder = new MediaRecorder(stream, { mimeType });
+
+    mediaRecorder.ondataavailable = e => {
+      if (e.data.size > 0) recordedChunks.push(e.data);
+    };
+
+    mediaRecorder.onstop = () => {
+      stream.getTracks().forEach(t => t.stop());
+      voiceBlob = new Blob(recordedChunks, { type: mimeType });
+      const ext = mimeType.includes('webm') ? 'webm' : 'ogg';
+      const voiceFile = new File([voiceBlob], `voice_${Date.now()}.${ext}`, { type: mimeType });
+
+      // Show playback
+      const audio = document.getElementById('voice-playback');
+      if (audio) {
+        audio.src = URL.createObjectURL(voiceBlob);
+        audio.style.display = 'block';
+      }
+
+      // Add to selectedFiles
+      if (selectedFiles.length < 4) {
+        selectedFiles.push(voiceFile);
+        renderMediaPreview();
+      }
+
+      clearInterval(voiceTimerInterval);
+      document.getElementById('voice-ui').style.display = 'none';
+      document.getElementById('voice-btn').classList.remove('recording');
+    };
+
+    mediaRecorder.start();
+
+    // Show UI
+    document.getElementById('voice-ui').style.display = 'block';
+    document.getElementById('voice-btn').classList.add('recording');
+
+    voiceTimerInterval = setInterval(() => {
+      voiceSeconds++;
+      const m = Math.floor(voiceSeconds / 60);
+      const s = voiceSeconds % 60;
+      const el = document.getElementById('voice-timer');
+      if (el) el.textContent = `${m}:${s.toString().padStart(2,'0')}`;
+    }, 1000);
+
+  } catch(err) {
+    alert('Немає доступу до мікрофону');
+  }
+}
+
+function stopVoiceRecord() {
+  if (mediaRecorder && mediaRecorder.state === 'recording') {
+    mediaRecorder.stop();
+  }
+}
+
+function cancelVoiceRecord() {
+  if (mediaRecorder && mediaRecorder.state === 'recording') {
+    mediaRecorder.stop();
+  }
+  clearInterval(voiceTimerInterval);
+  document.getElementById('voice-ui').style.display = 'none';
+  document.getElementById('voice-btn')?.classList.remove('recording');
+  recordedChunks = [];
+  voiceBlob = null;
+}

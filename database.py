@@ -34,10 +34,19 @@ def init_db():
             CREATE TABLE IF NOT EXISTS posts (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id INTEGER NOT NULL,
-                content TEXT NOT NULL,
-                image_emoji TEXT DEFAULT '',
+                content TEXT DEFAULT '',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            );
+            CREATE TABLE IF NOT EXISTS post_media (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                post_id INTEGER NOT NULL,
+                filename TEXT NOT NULL,
+                media_type TEXT NOT NULL,
+                mime_type TEXT DEFAULT '',
+                size INTEGER DEFAULT 0,
+                position INTEGER DEFAULT 0,
+                FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE
             );
             CREATE TABLE IF NOT EXISTS stories (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
