@@ -34,10 +34,12 @@ def login():
         db = get_db()
         user = db.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
         if user and check_password_hash(user['password_hash'], password):
+            user = dict(user)
             session['user_id'] = user['id']
             session['username'] = user['username']
-            session['theme'] = user['theme']
-            session['accent'] = user['accent_color']
+            session['theme'] = user.get('theme') or 'light'
+            session['accent'] = user.get('accent_color') or '#6366f1'
+            session['avatar_img'] = user.get('avatar_img') or ''
             return redirect(url_for('feed.index'))
         flash('Неправильний логін або пароль', 'error')
     return render_template('auth.html', mode='login')

@@ -17,12 +17,22 @@
     </div>
 
     <div class="story-header">
-      <div class="avatar avatar-sm" style="background:rgba(255,255,255,0.3);">
-        {{ story.username[0].upper() }}
-      </div>
-      <span style="color:white;font-weight:600;font-size:0.875rem;">{{ story.username }}</span>
-      <span style="color:rgba(255,255,255,0.6);font-size:0.75rem;margin-left:4px;">{{ story.created_at }}</span>
-      <a href="/" class="story-close">✕</a>
+      {% if story.avatar_img %}
+        <img src="/static/uploads/{{ story.avatar_img }}" class="avatar avatar-sm" style="object-fit:cover;">
+      {% else %}
+        <div class="avatar avatar-sm" style="background:rgba(255,255,255,0.3);">{{ story.username[0].upper() }}</div>
+      {% endif %}
+      <a href="/profile/{{ story.username }}" style="color:white;font-weight:600;font-size:0.875rem;text-decoration:none;">{{ story.username }}</a>
+      <span style="color:rgba(255,255,255,0.5);font-size:0.75rem;margin-left:4px;">{{ story.created_at }}</span>
+
+      {% if session.user_id == story.user_id %}
+        <button onclick="deleteThisStory({{ story.id }})"
+                style="margin-left:8px;background:rgba(255,255,255,0.15);border:none;border-radius:8px;color:white;padding:4px 10px;cursor:pointer;font-size:0.8rem;">
+          🗑
+        </button>
+      {% endif %}
+
+      <a href="/" class="story-close" style="margin-left:auto;">✕</a>
     </div>
 
     <div class="story-body">
@@ -33,5 +43,15 @@
 </div>
 
 <script src="/static/js/main.js"></script>
+<script>
+async function deleteThisStory(id) {
+  if (!confirm('Видалити сторіс?')) return;
+  try {
+    const res = await fetch(`/api/stories/${id}/delete`, {method:'POST'});
+    const data = await res.json();
+    if (data.deleted) window.location.href = '/';
+  } catch(e) { alert('Помилка'); }
+}
+</script>
 </body>
 </html>

@@ -6,9 +6,15 @@ DATABASE = 'social.db'
 def get_db():
     db = getattr(g, '_database', None)
     if db is None:
-        db = g._database = sqlite3.connect(DATABASE)
+        db = g._database = sqlite3.connect(
+            DATABASE,
+            timeout=10,                    # чекати 10с якщо БД зайнята
+            check_same_thread=False
+        )
         db.row_factory = sqlite3.Row
         db.execute("PRAGMA foreign_keys = ON")
+        db.execute("PRAGMA journal_mode = WAL")   # WAL дозволяє паралельні читання
+        db.execute("PRAGMA synchronous = NORMAL")
     return db
 
 def close_connection(exception):
@@ -101,3 +107,15 @@ def init_db():
         """)
         db.commit()
         app.teardown_appcontext(close_connection)
+
+def migrate_db():
+    """Run migrations for new columns."""
+    from app import app
+    with app.app_context():
+        db = get_db()
+        try:
+            db.execute("ALTER TABLE users ADD COLUMN avatar_img TEXT DEFAULT ''")
+            db.commit()
+            print("Migration: added avatar_img column")
+        except Exception:
+            pass  # already exists

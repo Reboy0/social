@@ -1,5 +1,5 @@
 from flask import Flask
-from database import init_db
+from database import init_db, migrate_db
 from routes.auth import auth_bp
 from routes.feed import feed_bp
 from routes.profile import profile_bp
@@ -21,4 +21,5 @@ app.register_blueprint(api_bp)
 
 if __name__ == '__main__':
     init_db()
+    migrate_db()
     app.run(debug=True, host='0.0.0.0', port=5000)

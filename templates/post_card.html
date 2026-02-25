@@ -1,0 +1,102 @@
+<article class="post-card" id="post-{{ post.id }}">
+
+  {# Header #}
+  <div class="post-header">
+    <a href="/profile/{{ post.username }}">
+      {% if post.get('avatar_img') or (post is mapping and post['avatar_img']) %}
+        <img src="/static/uploads/{{ post.avatar_img }}" class="avatar avatar-sm" style="object-fit:cover;">
+      {% else %}
+        <div class="avatar avatar-sm" style="background:{{ post.avatar_color }}">{{ post.username[0].upper() }}</div>
+      {% endif %}
+    </a>
+    <div class="post-author-info">
+      <a href="/profile/{{ post.username }}" class="post-author-name">{{ post.username }}</a>
+      <div class="post-time">{{ post.created_at }}</div>
+    </div>
+
+
+  
+  
+  
+  {# Media #}
+  {% if media %}
+    <div class="post-media-grid post-media-{{ media|length }}">
+      {% for m in media %}
+        {% if m.media_type == 'image' %}
+          <div class="post-media-item"><img src="/static/uploads/{{ m.filename }}" alt="фото" loading="lazy"></div>
+        {% elif m.media_type == 'video' %}
+          <div class="post-media-item"><video src="/static/uploads/{{ m.filename }}" controls preload="metadata" playsinline></video></div>
+        {% elif m.media_type == 'audio' %}
+          <div class="post-audio-wrap">
+            <div class="post-audio-icon">🎵</div>
+            <div class="post-audio-info">
+              <div class="post-audio-label">Аудіо</div>
+              <audio src="/static/uploads/{{ m.filename }}" controls></audio>
+            </div>
+          </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {# Text + double-tap #}
+  <div class="post-tappable" data-post-id="{{ post.id }}" style="position:relative;">
+    {% if post.content %}<div class="post-text-content">{{ post.content }}</div>{% endif %}
+    <span class="double-tap-heart">❤️</span>
+  </div>
+
+  {# Actions — з реакціями #}
+  <div class="post-actions">
+    {# Like з довгим натисканням для реакцій #}
+    <div class="reaction-wrap" data-post-id="{{ post.id }}">
+      <button class="post-action-btn like-btn-ajax {% if post.user_liked %}liked{% endif %}"
+              data-post-id="{{ post.id }}"
+              data-long-press="{{ post.id }}">
+        <span class="heart-icon">{% if post.user_liked %}❤️{% else %}🤍{% endif %}</span>
+      </button>
+      {# Reaction picker #}
+      <div class="reaction-picker" id="reactions-{{ post.id }}">
+        {% for emoji in ['❤️','😂','😮','😢','😡','🔥'] %}
+          <button class="reaction-btn" onclick="pickReaction({{ post.id }}, '{{ emoji }}')">{{ emoji }}</button>
+        {% endfor %}
+      </div>
+    </div>
+
+    <button class="post-action-btn" style="font-size:1.1rem;" onclick="toggleComments({{ post.id }})">💬</button>
+    <button class="post-action-btn" style="font-size:1.1rem;" onclick="sharePost({{ post.id }})">📤</button>
+    <button class="post-action-btn post-save-btn" style="font-size:1.1rem;">🔖</button>
+  </div>
+
+  {# Likes count #}
+  {% if post.like_count > 0 %}
+    <div class="post-likes" id="likes-{{ post.id }}">
+      {{ post.like_count }} {% if post.like_count == 1 %}вподобання{% else %}вподобань{% endif %}
+    </div>
+  {% else %}
+    <div class="post-likes" id="likes-{{ post.id }}" style="display:none;"></div>
+  {% endif %}
+
+  {# Comments toggle #}
+  <button class="view-comments-btn" onclick="toggleComments({{ post.id }})">
+    {% if post.comment_count > 0 %}
+      Переглянути всі коментарі ({{ post.comment_count }})
+    {% else %}
+      <span style="color:var(--text-3);">Додати коментар</span>
+    {% endif %}
+  </button>
+
+  {# Comments section #}
+  <div class="comments-section" id="comments-{{ post.id }}">
+    <div class="comments-list"></div>
+    <div class="comment-input-row" data-post-id="{{ post.id }}">
+      {% if session.get('avatar_img') %}
+        <img src="/static/uploads/{{ session.avatar_img }}" class="avatar avatar-xs" style="object-fit:cover;">
+      {% else %}
+        <div class="avatar avatar-xs" style="background:var(--accent)">{{ session.username[0].upper() }}</div>
+      {% endif %}
+      <input class="comment-input" type="text" placeholder="Коментар...">
+      <button class="comment-post-btn">Відповісти</button>
+    </div>
+  </div>
+
+</article>

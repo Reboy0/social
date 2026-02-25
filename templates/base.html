@@ -5,17 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>{% block title %}MySocial{% endblock %}</title>
   <link rel="stylesheet" href="/static/css/main.css">
-  {% block head %}{% endblock %}
 </head>
-<body
-  data-init-theme="{{ session.get('theme', 'light') }}"
-  data-init-accent="{{ session.get('accent', '#6366f1') }}">
+<body data-init-theme="{{ session.get('theme','light') }}" data-init-accent="{{ session.get('accent','#6366f1') }}">
 
 {% with messages = get_flashed_messages(with_categories=True) %}
   {% if messages %}
     <div class="flash-container">
-      {% for category, message in messages %}
-        <div class="flash-item {{ category }}">{{ message }}</div>
+      {% for cat, msg in messages %}
+        <div class="flash-item {{ cat }}">{{ msg }}</div>
       {% endfor %}
     </div>
   {% endif %}
@@ -27,58 +24,58 @@
 <div class="modal-overlay" id="modal-post" onclick="if(event.target===this)closeModal('modal-post')">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
-    <div class="modal-title">Новий пост</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <button type="button" onclick="closeModal('modal-post')" style="background:none;border:none;color:var(--text-2);font-size:1.1rem;cursor:pointer;">✕</button>
+      <div class="modal-title" style="margin:0;">Новий пост</div>
+      <button type="button" id="submit-post-btn" class="compose-submit" onclick="submitPost()">Опублікувати</button>
+    </div>
 
-    <form action="/post" method="POST" enctype="multipart/form-data" id="post-form">
-      <div style="display:flex;gap:12px;align-items:flex-start;">
-        <div class="avatar avatar-sm" style="background:{{ session.get('accent','#6366f1') }};flex-shrink:0;margin-top:4px;">
+    <div style="display:flex;gap:12px;align-items:flex-start;">
+      {% if session.get('avatar_img') %}
+        <img src="/static/uploads/{{ session.avatar_img }}" class="avatar avatar-sm" style="object-fit:cover;">
+      {% else %}
+        <div class="avatar avatar-sm" style="background:{{ session.get('accent','#6366f1') }}">
           {{ session.get('username','?')[0].upper() }}
         </div>
-        <textarea
-          class="compose-textarea"
-          name="content"
-          placeholder="Що у вас на думці?"
-          data-limit="500"
-          maxlength="500"
-        ></textarea>
+      {% endif %}
+      <textarea id="compose-text" class="compose-textarea" placeholder="Що у вас на думці?" maxlength="500"></textarea>
+    </div>
+
+    <!-- Media preview -->
+    <div id="media-preview" class="media-preview-grid" style="display:none;margin-top:12px;"></div>
+
+    <!-- Hidden inputs -->
+    <input type="file" id="media-input"
+           accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,audio/mpeg,audio/mp3,audio/wav,audio/ogg,audio/m4a"
+           multiple style="display:none;" onchange="handleMediaSelect(this)">
+
+    <div class="compose-footer" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
+      <div style="display:flex;gap:6px;">
+        <button type="button" class="compose-media-btn" title="Фото / Відео" onclick="document.getElementById('media-input').accept='image/*,video/mp4,video/webm';document.getElementById('media-input').click()">🖼️</button>
+        <button type="button" class="compose-media-btn" title="Аудіо / Музика" onclick="document.getElementById('media-input').accept='audio/*';document.getElementById('media-input').click()">🎵</button>
+        <button type="button" class="compose-media-btn" id="voice-btn" title="Голосове" onclick="toggleVoiceRecord()">🎤</button>
       </div>
+      <span id="compose-char" style="font-size:0.8rem;color:var(--text-3);">500</span>
+    </div>
 
-      <!-- Media preview -->
-      <div id="media-preview" class="media-preview-grid" style="display:none;"></div>
-
-      <!-- Hidden file input -->
-      <input type="file" name="media" id="media-input"
-             accept="image/*,video/mp4,video/mov,video/webm,audio/mp3,audio/mpeg,audio/wav,audio/ogg,audio/m4a"
-             multiple style="display:none;"
-             onchange="handleMediaSelect(this)">
-
-      <div class="compose-footer">
-        <div style="display:flex;gap:4px;align-items:center;">
-          <button type="button" class="compose-media-btn" title="Фото / Відео"
-                  onclick="triggerMedia('image/*,video/mp4,video/webm,video/mov')">🖼️</button>
-          <button type="button" class="compose-media-btn" title="Аудіо / Музика"
-                  onclick="triggerMedia('audio/*')">🎵</button>
-          <button type="button" class="compose-media-btn" title="Голосове"
-                  id="voice-btn" onclick="toggleVoiceRecord()">🎤</button>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center;">
-          <span class="compose-char">500</span>
-          <button type="submit" class="compose-submit">Опублікувати</button>
-        </div>
+    <!-- Voice UI -->
+    <div id="voice-ui" style="display:none;padding:12px;background:var(--bg-3);border-radius:10px;margin-top:10px;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:10px;height:10px;background:#ef4444;border-radius:50%;animation:voicePulse 0.8s infinite;"></div>
+        <span id="voice-timer" style="font-size:0.875rem;font-weight:600;">0:00</span>
+        <button type="button" onclick="stopVoiceRecord()" style="margin-left:auto;padding:6px 14px;background:var(--accent-grad);border:none;border-radius:8px;color:white;font-weight:600;cursor:pointer;">⏹ Стоп</button>
+        <button type="button" onclick="cancelVoiceRecord()" style="background:none;border:none;color:var(--text-2);cursor:pointer;">Скасувати</button>
       </div>
+    </div>
 
-      <!-- Voice recording UI -->
-      <div id="voice-ui" style="display:none;padding-top:12px;border-top:1px solid var(--border);margin-top:12px;">
-        <div style="display:flex;align-items:center;gap:12px;">
-          <div id="voice-indicator" style="width:10px;height:10px;background:#ef4444;border-radius:50%;"></div>
-          <span id="voice-timer" style="font-size:0.875rem;color:var(--text-2);">0:00</span>
-          <button type="button" onclick="stopVoiceRecord()" class="compose-submit" style="padding:6px 14px;font-size:0.8rem;">⏹ Зупинити</button>
-          <button type="button" onclick="cancelVoiceRecord()" style="background:none;border:none;color:var(--text-2);cursor:pointer;font-size:0.8rem;">Скасувати</button>
-        </div>
-        <audio id="voice-playback" controls style="width:100%;margin-top:10px;display:none;"></audio>
+    <!-- Post progress -->
+    <div id="post-progress" style="display:none;margin-top:10px;">
+      <div style="height:3px;background:var(--border);border-radius:2px;overflow:hidden;">
+        <div style="height:100%;background:var(--accent-grad);border-radius:2px;animation:progressBar 1.5s ease infinite;"></div>
       </div>
+      <div style="font-size:0.78rem;color:var(--text-2);margin-top:6px;">Завантаження...</div>
+    </div>
 
-    </form>
   </div>
 </div>
 
@@ -88,22 +85,17 @@
     <div class="modal-handle"></div>
     <div class="modal-title">Нова сторіс</div>
     <form action="/story/create" method="POST">
-      <textarea class="compose-textarea" name="content" placeholder="Напишіть щось для сторіс..."
-                data-limit="200" maxlength="200" style="min-height:70px;" required></textarea>
+      <textarea class="compose-textarea" name="content" placeholder="Напишіть щось..." maxlength="200" style="min-height:70px;" required></textarea>
       <input type="hidden" name="bg_color" value="#6366f1">
-      <div class="story-bg-picker">
+      <div class="story-bg-picker" style="margin-top:12px;">
         {% for color in ['#6366f1','#a855f7','#ec4899','#f43f5e','#f97316','#10b981','#06b6d4','#1d4ed8','#0f172a','#78716c'] %}
-          <div class="story-bg-swatch {% if loop.first %}selected{% endif %}"
-               style="background:{{ color }}"
-               onclick="this.closest('form').querySelector('[name=bg_color]').value='{{ color }}';
-                        this.closest('.story-bg-picker').querySelectorAll('.story-bg-swatch').forEach(s=>s.classList.remove('selected'));
-                        this.classList.add('selected')">
-          </div>
+          <div class="story-bg-swatch {% if loop.first %}selected{% endif %}" style="background:{{ color }}"
+               onclick="this.closest('form').querySelector('[name=bg_color]').value='{{ color }}';this.closest('.story-bg-picker').querySelectorAll('.story-bg-swatch').forEach(s=>s.classList.remove('selected'));this.classList.add('selected')"></div>
         {% endfor %}
       </div>
       <div class="compose-footer" style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);">
         <span></span>
-        <button type="submit" class="compose-submit">Опублікувати сторіс</button>
+        <button type="submit" class="compose-submit">Опублікувати</button>
       </div>
     </form>
   </div>

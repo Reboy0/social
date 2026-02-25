@@ -16,6 +16,7 @@ def login_required(f):
 def get_posts_with_media(db, uid, where_clause, params):
     posts = db.execute(f'''
         SELECT p.*, u.username, u.avatar_color, u.accent_color,
+               COALESCE(u.avatar_img, '') as avatar_img,
                (SELECT COUNT(*) FROM likes WHERE post_id = p.id) as like_count,
                (SELECT COUNT(*) FROM comments WHERE post_id = p.id) as comment_count,
                EXISTS(SELECT 1 FROM likes WHERE post_id = p.id AND user_id = ?) as user_liked
@@ -32,7 +33,7 @@ def get_posts_with_media(db, uid, where_clause, params):
             'SELECT * FROM post_media WHERE post_id=? ORDER BY position ASC',
             (post['id'],)
         ).fetchall()
-        result.append({'post': post, 'media': media})
+        result.append({'post': dict(post), 'media': [dict(m) for m in media]})
     return result
 
 @feed_bp.route('/')
@@ -42,7 +43,7 @@ def index():
     uid = session['user_id']
 
     stories = db.execute('''
-        SELECT s.*, u.username, u.avatar_color,
+        SELECT s.*, u.username, u.avatar_color, COALESCE(u.avatar_img,'') as avatar_img,
                EXISTS(SELECT 1 FROM story_views sv WHERE sv.story_id = s.id AND sv.user_id = ?) as viewed
         FROM stories s
         JOIN users u ON s.user_id = u.id
@@ -56,7 +57,7 @@ def index():
         (uid, uid))
 
     recommended = db.execute('''
-        SELECT u.*,
+        SELECT u.*, COALESCE(u.avatar_img,'') as avatar_img,
                (SELECT COUNT(*) FROM followers WHERE following_id = u.id) as followers_count
         FROM users u
         WHERE u.id != ?
@@ -72,17 +73,17 @@ def index():
 def create_post():
     content = request.form.get('content', '').strip()
     files = request.files.getlist('media')
-    has_files = any(f.filename for f in files)
+    has_files = any(f and f.filename for f in files)
 
     if not content and not has_files:
-        flash('Додайте текст або медіафайл', 'error')
-        return redirect(url_for('feed.index'))
+        return jsonify({'error': 'Додайте текст або медіафайл'}), 400
 
     db = get_db()
-    cursor = db.execute('INSERT INTO posts (user_id, content) VALUES (?, ?)',
-                        (session['user_id'], content))
+    uid = session['user_id']
+    cursor = db.execute('INSERT INTO posts (user_id, content) VALUES (?, ?)', (uid, content))
     post_id = cursor.lastrowid
 
+    saved_media = []
     for i, file in enumerate(files[:4]):
         if not file or not file.filename:
             continue
@@ -92,9 +93,26 @@ def create_post():
                 'INSERT INTO post_media (post_id, filename, media_type, position) VALUES (?,?,?,?)',
                 (post_id, filename, media_type, i)
             )
+            saved_media.append({'filename': filename, 'media_type': media_type, 'position': i})
 
     db.commit()
-    return redirect(url_for('feed.index'))
+
+    user = db.execute('SELECT * FROM users WHERE id=?', (uid,)).fetchone()
+    user = dict(user)  # конвертуємо sqlite3.Row у звичайний dict
+    post_data = {
+        'id': post_id,
+        'content': content,
+        'username': user['username'],
+        'avatar_color': user['avatar_color'],
+        'avatar_img': user.get('avatar_img') or '',
+        'user_id': uid,
+        'like_count': 0,
+        'comment_count': 0,
+        'user_liked': False,
+        'created_at': 'щойно',
+        'media': saved_media
+    }
+    return jsonify({'success': True, 'post': post_data})
 
 @feed_bp.route('/like/<int:post_id>', methods=['POST'])
 @login_required
@@ -114,6 +132,4 @@ def like_post(post_id):
         liked = True
     db.commit()
     count = db.execute('SELECT COUNT(*) FROM likes WHERE post_id=?', (post_id,)).fetchone()[0]
-    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-        return jsonify({'liked': liked, 'count': count})
-    return redirect(request.referrer or url_for('feed.index'))
+    return jsonify({'liked': liked, 'count': count})

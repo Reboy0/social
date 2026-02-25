@@ -3,7 +3,6 @@
 
 {% block body %}
 <div class="app-container">
-
   <aside class="sidebar-left">
     <div class="sidebar-logo">MySocial</div>
     <a href="/" class="nav-item"><span class="nav-icon">🏠</span> Стрічка</a>
@@ -13,36 +12,59 @@
     <button class="sidebar-post-btn" onclick="openModal('modal-post')">+ Створити пост</button>
     <a href="/profile/{{ session.username }}" class="sidebar-user">
       <div class="avatar avatar-sm" style="background:{{ session.get('accent','#6366f1') }}">{{ session.username[0].upper() }}</div>
-      <div class="sidebar-user-info"><div class="sidebar-username">{{ session.username }}</div></div>
     </a>
   </aside>
 
   <main class="main-feed">
-
     <div class="top-bar">
-      <a href="/profile/{{ user.username }}" class="icon-btn">←</a>
+      <a href="/profile/{{ user.username }}" style="color:var(--text-1);font-size:1.2rem;text-decoration:none;">←</a>
       <div style="font-weight:700;">Редагувати профіль</div>
-      <div style="width:36px;"></div>
+      <div style="width:24px;"></div>
     </div>
 
-    <form action="/profile/{{ user.username }}/edit" method="POST">
+    <form action="/profile/{{ user.username }}/edit" method="POST" enctype="multipart/form-data">
+
+      {# Avatar upload #}
+      <div class="settings-section">
+        <div class="settings-label">Фото профілю</div>
+        <div style="display:flex;align-items:center;gap:20px;">
+          <div id="avatar-preview" style="position:relative;cursor:pointer;" onclick="document.getElementById('avatar-file').click()">
+            {% if user.avatar_img %}
+              <img src="/static/uploads/{{ user.avatar_img }}" class="avatar avatar-xl" style="object-fit:cover;width:88px;height:88px;">
+            {% else %}
+              <div class="avatar avatar-xl" style="background:{{ user.avatar_color }};width:88px;height:88px;font-size:2rem;">
+                {{ user.username[0].upper() }}
+              </div>
+            {% endif %}
+            <div style="position:absolute;inset:0;background:rgba(0,0,0,0.4);border-radius:50%;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.2s;" id="avatar-overlay">
+              <span style="color:white;font-size:1.3rem;">📷</span>
+            </div>
+          </div>
+          <div>
+            <div style="font-weight:600;font-size:0.9rem;">{{ user.username }}</div>
+            <button type="button" onclick="document.getElementById('avatar-file').click()"
+                    style="background:none;border:none;color:var(--accent);font-weight:600;font-size:0.875rem;cursor:pointer;padding:0;margin-top:4px;">
+              Змінити фото
+            </button>
+          </div>
+        </div>
+        <input type="file" name="avatar_file" id="avatar-file" accept="image/*" style="display:none;"
+               onchange="previewAvatar(this)">
+      </div>
 
       {# Bio #}
       <div class="settings-section">
-        <div class="settings-label">Про себе</div>
+        <div class="settings-label">Біо</div>
         <textarea class="textarea-input" name="bio" placeholder="Розкажіть про себе..." maxlength="200">{{ user.bio or '' }}</textarea>
       </div>
 
-      {# Avatar color #}
+      {# Avatar color (fallback) #}
       <div class="settings-section">
-        <div class="settings-label">Колір аватара</div>
+        <div class="settings-label">Колір аватара (якщо немає фото)</div>
         <div class="color-grid">
-          {% set avatar_colors = ['#6366f1','#a855f7','#ec4899','#f43f5e','#f97316','#eab308','#10b981','#06b6d4','#3b82f6','#0f172a','#78716c','#64748b'] %}
-          {% for color in avatar_colors %}
+          {% for color in ['#6366f1','#a855f7','#ec4899','#f43f5e','#f97316','#eab308','#10b981','#06b6d4','#3b82f6','#0f172a','#78716c','#64748b'] %}
             <div class="color-swatch {% if user.avatar_color == color %}selected{% endif %}"
                  style="background:{{ color }}"
-                 data-color="{{ color }}"
-                 data-target="avatar_color"
                  onclick="this.closest('.color-grid').querySelectorAll('.color-swatch').forEach(s=>s.classList.remove('selected'));this.classList.add('selected');document.querySelector('[name=avatar_color]').value='{{ color }}'">
             </div>
           {% endfor %}
@@ -52,21 +74,12 @@
 
       {# Accent color #}
       <div class="settings-section">
-        <div class="settings-label">Акцентний колір інтерфейсу</div>
-        <div class="color-grid" id="accent-grid">
-          {% set accent_colors = [
-            ('#6366f1','Індиго'), ('#a855f7','Фіолет'), ('#ec4899','Рожевий'),
-            ('#f43f5e','Червоний'), ('#f97316','Помаранч'), ('#eab308','Жовтий'),
-            ('#10b981','Зелений'), ('#06b6d4','Блакитний'), ('#3b82f6','Синій')
-          ] %}
-          {% for color, label in accent_colors %}
+        <div class="settings-label">Акцентний колір</div>
+        <div class="color-grid">
+          {% for color in ['#6366f1','#a855f7','#ec4899','#f43f5e','#f97316','#eab308','#10b981','#06b6d4','#3b82f6'] %}
             <div class="color-swatch {% if user.accent_color == color %}selected{% endif %}"
                  style="background:{{ color }}"
-                 data-color="{{ color }}"
-                 data-target="accent_color"
-                 data-type="accent"
-                 title="{{ label }}"
-                 onclick="document.getElementById('accent-grid').querySelectorAll('.color-swatch').forEach(s=>s.classList.remove('selected'));this.classList.add('selected');document.querySelector('[name=accent_color]').value='{{ color }}';setAccentColor('{{ color }}')">
+                 onclick="this.closest('.color-grid').querySelectorAll('.color-swatch').forEach(s=>s.classList.remove('selected'));this.classList.add('selected');document.querySelector('[name=accent_color]').value='{{ color }}';setAccentColor('{{ color }}')">
             </div>
           {% endfor %}
         </div>
@@ -79,22 +92,16 @@
         <div class="theme-toggle-row">
           <div class="theme-label">Темна тема</div>
           <button type="button" class="toggle-switch {% if user.theme == 'dark' %}on{% endif %}"
-                  id="theme-toggle"
-                  onclick="const next=toggleTheme();document.querySelector('[name=theme]').value=next;"></button>
+                  onclick="const n=toggleTheme();document.querySelector('[name=theme]').value=n;"></button>
         </div>
         <input type="hidden" name="theme" value="{{ user.theme or 'light' }}">
       </div>
 
       <div class="settings-section">
-        <button type="submit" style="
-          width:100%; padding:12px;
-          background:var(--accent-grad); border:none; border-radius:10px;
-          color:white; font-weight:700; font-size:0.95rem; cursor:pointer;
-          box-shadow:0 4px 12px rgba(99,102,241,0.3);
-        ">Зберегти зміни</button>
-        <a href="/profile/{{ user.username }}" style="
-          display:block; text-align:center; margin-top:10px;
-          color:var(--text-2); font-size:0.875rem;">Скасувати</a>
+        <button type="submit" style="width:100%;padding:13px;background:var(--accent-grad);border:none;border-radius:12px;color:white;font-weight:700;font-size:0.95rem;cursor:pointer;">
+          Зберегти зміни
+        </button>
+        <a href="/profile/{{ user.username }}" style="display:block;text-align:center;margin-top:10px;color:var(--text-2);font-size:0.875rem;">Скасувати</a>
       </div>
 
       <div class="settings-section" style="border:none;">
@@ -102,9 +109,7 @@
       </div>
 
     </form>
-
   </main>
-
   <aside class="sidebar-right"></aside>
 </div>
 
@@ -115,4 +120,21 @@
   <a href="/notifications" class="bottom-nav-item"><span class="bnav-icon">🔔</span><span>Сповіщення</span></a>
   <a href="/profile/{{ session.username }}" class="bottom-nav-item active"><span class="bnav-icon">👤</span><span>Профіль</span></a>
 </nav>
+
+<script>
+function previewAvatar(input) {
+  if (input.files && input.files[0]) {
+    const url = URL.createObjectURL(input.files[0]);
+    const preview = document.getElementById('avatar-preview');
+    preview.innerHTML = `<img src="${url}" class="avatar avatar-xl" style="object-fit:cover;width:88px;height:88px;">
+      <div id="avatar-overlay" style="position:absolute;inset:0;background:rgba(0,0,0,0.4);border-radius:50%;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.2s;"><span style="color:white;font-size:1.3rem;">📷</span></div>`;
+  }
+}
+const overlay = document.getElementById('avatar-overlay');
+const preview = document.getElementById('avatar-preview');
+if (preview && overlay) {
+  preview.addEventListener('mouseenter', () => overlay.style.opacity = '1');
+  preview.addEventListener('mouseleave', () => overlay.style.opacity = '0');
+}
+</script>
 {% endblock %}
